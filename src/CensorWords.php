@@ -8,15 +8,21 @@ class CensorWords
 
     private $censorChecks = null;
 
+    /**
+     * @var array
+     */
     private $whiteList = [];
 
+    /**
+     * @var string
+     */
     private $whiteListPlaceHolder = ' {whiteList[i]} ';
 
     public function __construct()
     {
         $this->badwords = array();
         $this->replacer = '*';
-        $this->setDictionary('en-us');
+        $this->setDictionary('dictionary');
     }
 
 
@@ -219,6 +225,7 @@ class CensorWords
      */
     public function censorString($string, $fullWords = false)
     {
+        $string = $this->modifyText($string);
         // generate our censor checks if they are not defined yet
         if (!$this->censorChecks) {
             $this->generateCensorChecks($fullWords);
@@ -245,7 +252,35 @@ class CensorWords
         );
         $newstring['clean']   = $this->replaceWhiteListed($newstring['clean'], true);
         $newstring['matched'] = $match;
-
+        $newstring['isProfanity'] = ($match == null) ? false : true;
+        
         return $newstring;
+    }
+
+    
+    public function modifyText($string)
+    {
+        $text = preg_replace("/[^a-zA-Z 0-9]+/", " ", $string);
+        $text = explode(" ", $text);
+        $newtext = [];
+        foreach($text as $word){
+            $word = str_split( trim( $word ) );
+            $letters = [];
+            for($i = 0; $i < count($word) - 1; $i++){
+                if($word[$i] == $word[$i+1] ){
+                    array_push($letters, $i);
+                }
+            }
+            
+            foreach($letters as $letter){
+                unset($word[$letter]);
+            }
+
+            $word = implode ($word);
+            array_push($newtext, " ".$word." ");
+        }
+        $text = implode ($newtext);
+
+        return $text;
     }
 }
